@@ -3,10 +3,10 @@ int linkx=25;
 int linky=25;
 int bossx=150;
 int bossy=150;
+int time=millis();
 
 void setup()
 {
-Boss boss= new Boss(loadImage("link.png"));
 frameRate(100);
 size(800,600);
 background(0);
@@ -20,6 +20,9 @@ void draw()
   Nlink.affichage();
   boss.display();
   boss.attack();
+  boss.move();
+  boss.attack();
+  boss.xmove();
   stroke(255,0,0);
   line(linkx,linky,bossx,bossy);
   if(keyPressed==true)

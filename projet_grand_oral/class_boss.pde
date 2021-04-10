@@ -1,8 +1,9 @@
 int nx= 100;
 int ny=100;
 int attx=100;
-int atty=100;
-int time=0;
+int atty=150;
+
+
 class Boss{
 PImage IBoss=loadImage("link.png");
   
@@ -21,17 +22,12 @@ void display()
 
 void attack()
 {
-  if (millis() > time + 100)
-  {
     circle(attx,atty,20);
-    for(int i=0;i<20;i+=1)
+    if(attx>800 || attx<0)
     {
-    circle(attx,atty,20);
-    move();
-    circle(attx,atty,20);
+      attx=nx;
+      atty=ny+50;
     }
-  }
-    time=millis();;
 }
 
 void up()
@@ -40,6 +36,7 @@ void up()
   {
   ny-=2;
   bossy-=2;
+  atty-=2;
   }
 }
 void down()
@@ -48,6 +45,7 @@ void down()
   {
    ny+=2;
    bossy+=2;
+   atty+=2;
   }
 }
 void right()
@@ -56,6 +54,7 @@ void right()
   {
     nx+=2;
     bossx+=2;
+    attx+=2;
   }
 }
 void left()
@@ -64,11 +63,16 @@ void left()
   {
     nx-=2;
     bossx-=2;
+    attx-=2;
   }
 }
 
 void move()
 {
   attx+=10;
+}
+void xmove()
+{
+  attx-=10;
 }
 }
