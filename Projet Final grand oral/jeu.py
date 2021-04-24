@@ -89,7 +89,7 @@ class Player(pygame.sprite.Sprite):
         self.start = time.time()
 
 
-
+#class monster
 
 class Game:
     def __init__(self):
