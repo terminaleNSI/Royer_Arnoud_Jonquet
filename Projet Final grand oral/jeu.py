@@ -58,7 +58,7 @@ class Player(pygame.sprite.Sprite):
         self.position = self.old_position
 
     def fall(self,spawn):
-        self.position =spawn
+        self.position = spawn
     def attack(self):
         self.change_animation("attack")
 
@@ -115,11 +115,15 @@ class Game:
         #chargement de toutes les collisions
         self.walls = []
         self.void = []
+        self.exit = []
         for obj in tmx_data.objects:
             if obj.name == "collision" :
                 self.walls.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
         for obj in tmx_data.objects:
             if obj.name == "void" :
+                self.void.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
+        for obj in tmx_data.objects:
+            if obj.name == "exit" :
                 self.void.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
 
     def handle_input(self):
@@ -149,13 +153,20 @@ class Game:
     def update(self):
         self.group.update()
 
-        # vérifie la collision
+        # vérifie la collision avec un mur
         for sprite in self.group.sprites():
             if self.player.feet.collidelist(self.walls) >-1:
                 # le joueur revient juste en arrière
                 self.player.move_back()
+        #vérifie la collision avec un trou
             if self.player.feet.collidelist(self.void) >-1:
+                # renvoie le joueur au point de spawn
                 self.player.fall([self.spawn_point.x,self.spawn_point.y])
+                print("Vous êtes tombés")
+
+            if self.player.feet.collidelist(self.exit) >-1:
+                self.player.fall([self.spawn_point.x,self.spawn_point.y])
+                print("en cours de développement")
 
 
 
