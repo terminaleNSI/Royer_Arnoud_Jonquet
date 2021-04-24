@@ -10,6 +10,7 @@ class SpriteSheet():
         self.images =dict()
         self.load_images("idle",numbers = 5)
         self.load_images("run",numbers = 8,row = 1)
+        self.load_images("attack",numbers = 8,row = 2)
 
 
 
@@ -56,6 +57,11 @@ class Player(pygame.sprite.Sprite):
     def move_back(self):
         self.position = self.old_position
 
+    def fall(self,spawn):
+        self.position =spawn
+    def attack(self):
+        self.change_animation("attack")
+
 
     def change_animation(self,name):
         self.current_animation = name
@@ -79,7 +85,6 @@ class Player(pygame.sprite.Sprite):
         self.animation()
         self.image=self.get_animation()[self.current_animation_index]
         self.image.set_colorkey((0,0,0))
-        self.image.set_colorkey((0,0,0))
         self.image = pygame.transform.scale(self.image,(50,50))
         self.start = time.time()
 
@@ -100,19 +105,22 @@ class Game:
         self.group = pyscroll.PyscrollGroup(map_layer=map_layer , default_layer = 1)
 
         #récupération de la position du spawn du joueur
-        spawn_point = tmx_data.get_object_by_name("player_spawn")
+        self.spawn_point = tmx_data.get_object_by_name("player_spawn")
 
         #chargement du joueur
-        self.player=Player(spawn_point.x,spawn_point.y)
+        self.player=Player(self.spawn_point.x,self.spawn_point.y)
         self.group.add(self.player)
         #Zoom de la map
         map_layer.zoom = 2.5
         #chargement de toutes les collisions
         self.walls = []
+        self.void = []
         for obj in tmx_data.objects:
             if obj.name == "collision" :
                 self.walls.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
-        print(len(self.walls ))
+        for obj in tmx_data.objects:
+            if obj.name == "void" :
+                self.void.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
 
     def handle_input(self):
         pressed = pygame.key.get_pressed()
@@ -128,6 +136,11 @@ class Game:
         elif pressed[pygame.K_LEFT]:
             self.player.move_left()
             self.player.change_animation("run")
+        elif pressed[pygame.K_0]:
+            self.player.attack()
+
+
+
 
 
 
@@ -141,6 +154,8 @@ class Game:
             if self.player.feet.collidelist(self.walls) >-1:
                 # le joueur revient juste en arrière
                 self.player.move_back()
+            if self.player.feet.collidelist(self.void) >-1:
+                self.player.fall([self.spawn_point.x,self.spawn_point.y])
 
 
 
