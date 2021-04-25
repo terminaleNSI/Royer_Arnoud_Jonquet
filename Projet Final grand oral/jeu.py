@@ -8,9 +8,7 @@ class SpriteSheet():
     def __init__(self,name):
         self.sprite_sheet = pygame.image.load(name)
         self.images =dict()
-        self.load_images("idle",numbers = 5)
-        self.load_images("run",numbers = 8,row = 1)
-        self.load_images("attack",numbers = 8,row = 2)
+
 
 
 
@@ -32,6 +30,9 @@ class Player(pygame.sprite.Sprite):
     def __init__(self,x,y):
         super().__init__()
         self.sprite_sheet= SpriteSheet("player.png")
+        self.sprite_sheet.load_images("idle",numbers = 5)
+        self.sprite_sheet.load_images("run",numbers = 8,row = 1)
+        self.sprite_sheet.load_images("attack",numbers = 8,row = 2)
         self.image = self.sprite_sheet.get_images("idle")[0]
         self.rect= self.image.get_rect()
         self.position  = [x,y]
@@ -61,6 +62,8 @@ class Player(pygame.sprite.Sprite):
         self.position = spawn
     def attack(self):
         self.change_animation("attack")
+    def teleportation(self,spawn):
+        self.position = spawn
 
 
     def change_animation(self,name):
@@ -89,7 +92,41 @@ class Player(pygame.sprite.Sprite):
         self.start = time.time()
 
 
-#class monster
+class Cobra(pygame.sprite.Sprite):
+    def __init__(self,x,y):
+        super().__init__()
+        self.sprite_sheet = SpriteSheet("Cobra.png")
+        self.sprite_sheet.load_images("idle",numbers = 8, row = 0)
+        self.sprite_sheet.load_images("attack",numbers = 6, row = 2)
+        self.current_animation = "idle"
+        self.image = self.sprite_sheet.get_images("idle")[0]
+        self.rect= self.image.get_rect()
+        self.position = [x,y]
+        self.old_position = self.position
+        self.current_animation_index = 0
+        self.cooldown = 0
+
+    def update(self):
+        self.rect.topleft=self.position
+        self.animation()
+        self.image=self.get_animation()[self.current_animation_index]
+        self.image.set_colorkey((0,0,0))
+        self.image = pygame.transform.scale(self.image,(50,50))
+        self.start = time.time()
+
+    def get_animation(self):
+        return self.sprite_sheet.get_images(self.current_animation)
+
+    def animation(self):
+        if self.cooldown > 100 :
+            self.current_animation_index += 1
+            if self.current_animation_index == len(self.get_animation()):
+                self.current_animation_index = 0
+            self.cooldown = 0
+    def change_animation(self,name):
+        self.current_animation = name
+
+
 
 class Game:
     def __init__(self):
@@ -110,12 +147,15 @@ class Game:
         #chargement du joueur
         self.player=Player(self.spawn_point.x,self.spawn_point.y)
         self.group.add(self.player)
+
         #Zoom de la map
         map_layer.zoom = 2.5
         #chargement de toutes les collisions
         self.walls = []
         self.void = []
         self.exit = []
+        #group des monstres
+        self.monster = pygame.sprite.Group()
         for obj in tmx_data.objects:
             if obj.name == "collision" :
                 self.walls.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
@@ -124,7 +164,13 @@ class Game:
                 self.void.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
         for obj in tmx_data.objects:
             if obj.name == "exit" :
-                self.void.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
+                self.exit.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
+        for obj in tmx_data.objects:
+            if obj.name == "ennemy" :
+                cobra = Cobra(obj.x,obj.y)
+                self.monster.add(cobra)
+        #chargement des monstres
+        self.group.add(self.monster)
 
     def handle_input(self):
         pressed = pygame.key.get_pressed()
@@ -142,7 +188,6 @@ class Game:
             self.player.change_animation("run")
         elif pressed[pygame.K_0]:
             self.player.attack()
-
 
 
 
@@ -172,6 +217,7 @@ class Game:
 
 
 
+
     def run(self):
         running = True
         clock = pygame.time.Clock()
@@ -182,6 +228,10 @@ class Game:
             self.update()
             self.group.center(self.player.rect)
             self.group.draw(self.screen)
+
+            self.player.cooldown += clock.get_time()
+            for monster in self.monster:
+                monster.cooldown += clock.get_time()
             #actualisation de l'écran
             pygame.display.flip()
 
@@ -190,7 +240,7 @@ class Game:
                     running = False
 
 
-            self.player.cooldown += clock.get_time(     )
+
             clock.tick(60)
         pygame.quit()
 
