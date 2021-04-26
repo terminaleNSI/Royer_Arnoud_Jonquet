@@ -143,6 +143,7 @@ class Game:
 
         #récupération de la position du spawn du joueur
         self.spawn_point = tmx_data.get_object_by_name("player_spawn")
+        self.spawn_point_bis = tmx_data.get_object_by_name("spawn_2")
 
         #chargement du joueur
         self.player=Player(self.spawn_point.x,self.spawn_point.y)
@@ -210,7 +211,7 @@ class Game:
                 print("Vous êtes tombés")
 
             if self.player.feet.collidelist(self.exit) >-1:
-                self.player.fall([self.spawn_point.x,self.spawn_point.y])
+                self.player.teleportation([self.spawn_point_bis.x,self.spawn_point_bis.y])
                 print("en cours de développement")
 
 
