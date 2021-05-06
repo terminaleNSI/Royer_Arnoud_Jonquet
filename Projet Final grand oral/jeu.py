@@ -31,16 +31,18 @@ class Player(pygame.sprite.Sprite):
         super().__init__()
         self.sprite_sheet= SpriteSheet("player.png")
         self.sprite_sheet.load_images("idle",numbers = 5)
-        self.sprite_sheet.load_images("run",numbers = 8,row = 1)
-        self.sprite_sheet.load_images("attack",numbers = 8,row = 2)
+        self.sprite_sheet.load_images("run_r",numbers = 8,row = 1)
+        self.sprite_sheet.load_images("run_l",numbers = 8,row = 2)
+        self.sprite_sheet.load_images("attack_r",numbers = 8,row = 3)
+        self.sprite_sheet.load_images("attack_l",numbers = 8,row = 4)
         self.image = self.sprite_sheet.get_images("idle")[0]
         self.rect= self.image.get_rect()
         self.position  = [x,y]
-        self.feet = pygame.Rect(0,0,self.rect.width *0.5,12)
+        self.feet = pygame.Rect(0,0,self.rect.width *0.5,self.rect.height*0.5)
         self.current_animation = "idle"
         self.old_position = self.position
         self.current_animation_index = 0
-        self.cooldown = 0
+        self.cooldown = -100
         self.speed=3
 
     def move_right(self):
@@ -61,7 +63,7 @@ class Player(pygame.sprite.Sprite):
     def fall(self,spawn):
         self.position = spawn
     def attack(self):
-        self.change_animation("attack")
+        self.current_animation = "attack"
     def teleportation(self,spawn):
         self.position = spawn
 
@@ -83,10 +85,10 @@ class Player(pygame.sprite.Sprite):
         self.old_position = self.position.copy()
 
     def update(self):
-        self.rect.topleft=self.position
+        self.rect.topleft = self.position
         self.feet.midbottom = self.rect.midbottom
         self.animation()
-        self.image=self.get_animation()[self.current_animation_index]
+        self.image = self.get_animation()[self.current_animation_index %5]
         self.image.set_colorkey((0,0,0))
         self.image = pygame.transform.scale(self.image,(50,50))
         self.start = time.time()
@@ -144,6 +146,7 @@ class Game:
         #récupération de la position du spawn du joueur
         self.spawn_point = tmx_data.get_object_by_name("player_spawn")
         self.spawn_point_bis = tmx_data.get_object_by_name("spawn_2")
+        self.sortie = tmx_data.get_object_by_name("player_spawn2")
 
         #chargement du joueur
         self.player=Player(self.spawn_point.x,self.spawn_point.y)
@@ -155,6 +158,7 @@ class Game:
         self.walls = []
         self.void = []
         self.exit = []
+        self.exit2 = []
         #group des monstres
         self.monster = pygame.sprite.Group()
         for obj in tmx_data.objects:
@@ -167,6 +171,9 @@ class Game:
             if obj.name == "exit" :
                 self.exit.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
         for obj in tmx_data.objects:
+            if obj.name == "exit2" :
+                self.exit2.append(pygame.rect.Rect(obj.x,obj.y,obj.width,obj.height))
+        for obj in tmx_data.objects:
             if obj.name == "ennemy" :
                 cobra = Cobra(obj.x,obj.y)
                 self.monster.add(cobra)
@@ -177,18 +184,23 @@ class Game:
         pressed = pygame.key.get_pressed()
         if pressed[pygame.K_UP]:
             self.player.move_up()
-            self.player.change_animation("run")
+            self.player.change_animation("run_r")
         elif pressed[pygame.K_DOWN]:
             self.player.move_down()
-            self.player.change_animation("run")
+            self.player.change_animation("run_r")
         elif pressed[pygame.K_RIGHT]:
             self.player.move_right()
-            self.player.change_animation("run")
+            self.player.change_animation("run_r")
         elif pressed[pygame.K_LEFT]:
             self.player.move_left()
-            self.player.change_animation("run")
+            self.player.change_animation("run_l")
         elif pressed[pygame.K_0]:
-            self.player.attack()
+            self.player.change_animation("attack_r")
+        elif pressed[pygame.K_1]:
+            self.player.change_animation("attack_l")
+        else:
+            self.player.change_animation("idle")
+
 
 
 
@@ -204,14 +216,18 @@ class Game:
             if self.player.feet.collidelist(self.walls) >-1:
                 # le joueur revient juste en arrière
                 self.player.move_back()
-        #vérifie la collision avec un trou
+                #vérifie la collision avec un trou
             if self.player.feet.collidelist(self.void) >-1:
                 # renvoie le joueur au point de spawn
                 self.player.fall([self.spawn_point.x,self.spawn_point.y])
                 print("Vous êtes tombés")
-
+                #vérifie si la collision entre le joueur et la sortie dans la grotte
             if self.player.feet.collidelist(self.exit) >-1:
                 self.player.teleportation([self.spawn_point_bis.x,self.spawn_point_bis.y])
+                print("en cours de développement")
+                #vérifie la collision entre le joueur et la sortie dans la forêt
+            if self.player.feet.collidelist(self.exit2) >-1:
+                self.player.teleportation([self.sortie.x,self.sortie.y])
                 print("en cours de développement")
 
 
@@ -226,6 +242,7 @@ class Game:
             #actualisation de la carte
             self.player.save_location()
             self.handle_input()
+           # self.release_input()
             self.update()
             self.group.center(self.player.rect)
             self.group.draw(self.screen)
@@ -239,6 +256,7 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+            print(self.player.current_animation_index)
 
 
 
