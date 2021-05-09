@@ -2,7 +2,7 @@ import pygame
 import pytmx
 import pyscroll
 import time
-
+from math import *
 
 class SpriteSheet():
     def __init__(self,name):
@@ -35,15 +35,20 @@ class Player(pygame.sprite.Sprite):
         self.sprite_sheet.load_images("run_l",numbers = 8,row = 2)
         self.sprite_sheet.load_images("attack_r",numbers = 8,row = 3)
         self.sprite_sheet.load_images("attack_l",numbers = 8,row = 4)
+        self.sprite_sheet.load_images("hit",numbers = 3,row = 5)
+        self.sprite_sheet.load_images("death",numbers = 7,row = 6)
         self.image = self.sprite_sheet.get_images("idle")[0]
         self.rect= self.image.get_rect()
         self.position  = [x,y]
-        self.feet = pygame.Rect(0,0,self.rect.width *0.5,self.rect.height*0.5)
+        self.feet = pygame.Rect(0,0,self.rect.width,12)
+        self.collision = pygame.Rect(0,0,self.rect.width,self.rect.height)
         self.current_animation = "idle"
         self.old_position = self.position
         self.current_animation_index = 0
         self.cooldown = -100
         self.speed=3
+        self.life  = 3
+        self.alive = True
 
     def move_right(self):
         self.position[0] += self.speed
@@ -62,8 +67,7 @@ class Player(pygame.sprite.Sprite):
 
     def fall(self,spawn):
         self.position = spawn
-    def attack(self):
-        self.current_animation = "attack"
+
     def teleportation(self,spawn):
         self.position = spawn
 
@@ -182,27 +186,25 @@ class Game:
 
     def handle_input(self):
         pressed = pygame.key.get_pressed()
-        if pressed[pygame.K_UP]:
-            self.player.move_up()
-            self.player.change_animation("run_r")
-        elif pressed[pygame.K_DOWN]:
-            self.player.move_down()
-            self.player.change_animation("run_r")
-        elif pressed[pygame.K_RIGHT]:
-            self.player.move_right()
-            self.player.change_animation("run_r")
-        elif pressed[pygame.K_LEFT]:
-            self.player.move_left()
-            self.player.change_animation("run_l")
-        elif pressed[pygame.K_0]:
-            self.player.change_animation("attack_r")
-        elif pressed[pygame.K_1]:
-            self.player.change_animation("attack_l")
-        else:
-            self.player.change_animation("idle")
-
-
-
+        if self.player.alive == True:
+            if pressed[pygame.K_UP]:
+                self.player.move_up()
+                self.player.change_animation("run_r")
+            elif pressed[pygame.K_DOWN]:
+                self.player.move_down()
+                self.player.change_animation("run_r")
+            elif pressed[pygame.K_RIGHT]:
+                self.player.move_right()
+                self.player.change_animation("run_r")
+            elif pressed[pygame.K_LEFT]:
+                self.player.move_left()
+                self.player.change_animation("run_l")
+            elif pressed[pygame.K_0]:
+                self.player.change_animation("attack_r")
+            elif pressed[pygame.K_1]:
+                self.player.change_animation("attack_l")
+            else:
+                self.player.change_animation("idle")
 
 
 
@@ -216,11 +218,13 @@ class Game:
             if self.player.feet.collidelist(self.walls) >-1:
                 # le joueur revient juste en arrière
                 self.player.move_back()
+                self.player.change_animation("hit")
                 #vérifie la collision avec un trou
             if self.player.feet.collidelist(self.void) >-1:
                 # renvoie le joueur au point de spawn
                 self.player.fall([self.spawn_point.x,self.spawn_point.y])
-                print("Vous êtes tombés")
+                self.player.life -= round(1/17,3)
+                print("Vous êtes tombés et il vous reste",self.player.life,"vie")
                 #vérifie si la collision entre le joueur et la sortie dans la grotte
             if self.player.feet.collidelist(self.exit) >-1:
                 self.player.teleportation([self.spawn_point_bis.x,self.spawn_point_bis.y])
@@ -238,6 +242,8 @@ class Game:
     def run(self):
         running = True
         clock = pygame.time.Clock()
+        song = pygame.mixer.Sound("musique _ambiance.ogg")
+        song.set_volume(0.008)
         while running:
             #actualisation de la carte
             self.player.save_location()
@@ -250,13 +256,16 @@ class Game:
             self.player.cooldown += clock.get_time()
             for monster in self.monster:
                 monster.cooldown += clock.get_time()
+            if self.player.life <= 0 :
+                self.player.change_animation("death")
+                self.player.alive = False
             #actualisation de l'écran
             pygame.display.flip()
+            song.play()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-            print(self.player.current_animation_index)
 
 
 
