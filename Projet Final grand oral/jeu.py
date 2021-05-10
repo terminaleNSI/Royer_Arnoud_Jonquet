@@ -30,25 +30,29 @@ class Player(pygame.sprite.Sprite):
     def __init__(self,x,y):
         super().__init__()
         self.sprite_sheet= SpriteSheet("player.png")
-        self.sprite_sheet.load_images("idle",numbers = 5)
-        self.sprite_sheet.load_images("run_r",numbers = 8,row = 1)
-        self.sprite_sheet.load_images("run_l",numbers = 8,row = 2)
-        self.sprite_sheet.load_images("attack_r",numbers = 8,row = 3)
-        self.sprite_sheet.load_images("attack_l",numbers = 8,row = 4)
-        self.sprite_sheet.load_images("hit",numbers = 3,row = 5)
-        self.sprite_sheet.load_images("death",numbers = 7,row = 6)
-        self.image = self.sprite_sheet.get_images("idle")[0]
+        self.sprite_sheet.load_images("idle_r",numbers = 5)
+        self.sprite_sheet.load_images("idle_l",numbers = 5,row = 1)
+        self.sprite_sheet.load_images("run_r",numbers = 8,row = 2)
+        self.sprite_sheet.load_images("run_l",numbers = 8,row = 3)
+        self.sprite_sheet.load_images("attack_r",numbers = 8,row = 4)
+        self.sprite_sheet.load_images("attack_l",numbers = 8,row = 5)
+        self.sprite_sheet.load_images("hit",numbers = 3,row = 6)
+        self.sprite_sheet.load_images("death",numbers = 7,row = 7)
+        self.sprite_sheet.load_images("fall_r",numbers = 8,row = 8)
+        self.sprite_sheet.load_images("fall_l",numbers = 8,row = 9)
+        self.image = self.sprite_sheet.get_images("idle_r")[0]
         self.rect= self.image.get_rect()
         self.position  = [x,y]
         self.feet = pygame.Rect(0,0,self.rect.width,12)
         self.collision = pygame.Rect(0,0,self.rect.width,self.rect.height)
-        self.current_animation = "idle"
+        self.current_animation = "idle_r"
         self.old_position = self.position
         self.current_animation_index = 0
         self.cooldown = -100
         self.speed=3
         self.life  = 3
         self.alive = True
+        self.last_view = "idle_r"
 
     def move_right(self):
         self.position[0] += self.speed
@@ -190,21 +194,33 @@ class Game:
             if pressed[pygame.K_UP]:
                 self.player.move_up()
                 self.player.change_animation("run_r")
+                self.player.last_view = "idle_r"
             elif pressed[pygame.K_DOWN]:
                 self.player.move_down()
-                self.player.change_animation("run_r")
+                self.player.change_animation("run_l")
+                self.player.last_view = "idle_l"
             elif pressed[pygame.K_RIGHT]:
                 self.player.move_right()
                 self.player.change_animation("run_r")
+                self.player.last_view = "idle_r"
             elif pressed[pygame.K_LEFT]:
                 self.player.move_left()
                 self.player.change_animation("run_l")
+                self.player.last_view = "idle_l"
             elif pressed[pygame.K_0]:
                 self.player.change_animation("attack_r")
+                self.player.last_view = "idle_r"
             elif pressed[pygame.K_1]:
                 self.player.change_animation("attack_l")
+                self.player.last_view = "idle_l"
+            elif pressed[pygame.K_f]:
+                self.player.change_animation("fall_l")
+                self.player.last_view = "idle_l"
+            elif pressed[pygame.K_g]:
+                self.player.change_animation("fall_r")
+                self.player.last_view = "idle_r"
             else:
-                self.player.change_animation("idle")
+                self.player.change_animation(self.player.last_view)
 
 
 
