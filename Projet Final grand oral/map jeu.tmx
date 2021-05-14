@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.5" tiledversion="1.6.0" orientation="orthogonal" renderorder="right-down" width="500" height="500" tilewidth="32" tileheight="32" infinite="0" nextlayerid="10" nextobjectid="2496">
+<map version="1.5" tiledversion="1.6.0" orientation="orthogonal" renderorder="right-down" width="500" height="500" tilewidth="32" tileheight="32" infinite="0" nextlayerid="10" nextobjectid="2497">
  <tileset firstgid="1" source="tileset_dungeon.tsx"/>
  <tileset firstgid="65" source="Forest Tileset.tsx"/>
  <layer id="1" name="background" width="500" height="500">
@@ -2019,7 +2019,7 @@
 </data>
  </layer>
  <objectgroup id="7" name="objets">
-  <object id="2404" name="player_spawn" x="6800.17" y="8349.46">
+  <object id="2404" name="player_spawn" x="6838.17" y="8327.46">
    <point/>
   </object>
   <object id="2405" name="collision" x="6207.17" y="7841.46" width="128" height="14.25"/>
@@ -2154,11 +2154,14 @@
   <object id="2492" name="ennemy" x="6710.84" y="7428.96">
    <point/>
   </object>
-  <object id="2493" name="spawn_2" x="6768.34" y="3973.33">
+  <object id="2493" name="spawn_2" x="6729.01" y="3952">
    <point/>
   </object>
   <object id="2494" name="exit2" x="6758.29" y="3904.25" width="17.4167" height="33.5"/>
-  <object id="2495" name="player_spawn2" x="7024.67" y="6997.33">
+  <object id="2495" name="player_spawn2" x="6990.67" y="6985.33">
+   <point/>
+  </object>
+  <object id="2496" name="pnj" x="6855.33" y="8256">
    <point/>
   </object>
  </objectgroup>

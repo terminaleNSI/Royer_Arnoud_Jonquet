@@ -30,14 +30,14 @@ class Player(pygame.sprite.Sprite):
     def __init__(self,x,y):
         super().__init__()
         self.sprite_sheet= SpriteSheet("player.png")
-        self.sprite_sheet.load_images("idle_r",numbers = 5)
-        self.sprite_sheet.load_images("idle_l",numbers = 5,row = 1)
+        self.sprite_sheet.load_images("idle_r",numbers = 8)
+        self.sprite_sheet.load_images("idle_l",numbers = 8,row = 1)
         self.sprite_sheet.load_images("run_r",numbers = 8,row = 2)
         self.sprite_sheet.load_images("run_l",numbers = 8,row = 3)
         self.sprite_sheet.load_images("attack_r",numbers = 8,row = 4)
         self.sprite_sheet.load_images("attack_l",numbers = 8,row = 5)
-        self.sprite_sheet.load_images("hit",numbers = 3,row = 6)
-        self.sprite_sheet.load_images("death",numbers = 7,row = 7)
+        self.sprite_sheet.load_images("hit",numbers = 8,row = 6)
+        self.sprite_sheet.load_images("death",numbers = 8,row = 7)
         self.sprite_sheet.load_images("fall_r",numbers = 8,row = 8)
         self.sprite_sheet.load_images("fall_l",numbers = 8,row = 9)
         self.image = self.sprite_sheet.get_images("idle_r")[0]
@@ -53,6 +53,7 @@ class Player(pygame.sprite.Sprite):
         self.life  = 3
         self.alive = True
         self.last_view = "idle_r"
+        self.fall_instance = False
 
     def move_right(self):
         self.position[0] += self.speed
@@ -70,6 +71,8 @@ class Player(pygame.sprite.Sprite):
         self.position = self.old_position
 
     def fall(self,spawn):
+        if self.fall_instance == True:
+            self.change_animation("fall_l")
         self.position = spawn
 
     def teleportation(self,spawn):
@@ -96,10 +99,41 @@ class Player(pygame.sprite.Sprite):
         self.rect.topleft = self.position
         self.feet.midbottom = self.rect.midbottom
         self.animation()
-        self.image = self.get_animation()[self.current_animation_index %5]
+        self.image = self.get_animation()[self.current_animation_index %8]
         self.image.set_colorkey((0,0,0))
         self.image = pygame.transform.scale(self.image,(50,50))
         self.start = time.time()
+
+class Pnj(pygame.sprite.Sprite):
+    def __init__(self,x,y):
+        super().__init__()
+        self.sprite_sheet = SpriteSheet("female.png")
+        self.sprite_sheet.load_images("idle",numbers = 6, row = 0)
+        self.current_animation = "idle"
+        self.image = self.sprite_sheet.get_images("idle")[0]
+        self.position = [x,y]
+        self.current_animation_index = 0
+        self.cooldown = 0
+        self.rect= self.image.get_rect()
+
+    def get_animation(self):
+        return self.sprite_sheet.get_images(self.current_animation)
+
+
+    def update(self):
+        self.rect.topleft=self.position
+        self.animation()
+        self.image=self.get_animation()[self.current_animation_index]
+        self.image.set_colorkey((0,0,0))
+        self.image = pygame.transform.scale(self.image,(50,50))
+        self.start = time.time()
+
+    def animation(self):
+        if self.cooldown > 100 :
+            self.current_animation_index += 1
+            if self.current_animation_index == len(self.get_animation()):
+                self.current_animation_index = 0
+            self.cooldown = 0
 
 
 class Cobra(pygame.sprite.Sprite):
@@ -185,6 +219,10 @@ class Game:
             if obj.name == "ennemy" :
                 cobra = Cobra(obj.x,obj.y)
                 self.monster.add(cobra)
+        for obj in tmx_data.objects:
+            if obj.name == "pnj" :
+                pnj=Pnj(obj.x, obj.y)
+                self.monster.add(pnj)
         #chargement des monstres
         self.group.add(self.monster)
 
@@ -238,7 +276,11 @@ class Game:
                 #vérifie la collision avec un trou
             if self.player.feet.collidelist(self.void) >-1:
                 # renvoie le joueur au point de spawn
+                self.player.change_animation("fall_l")
+                self.player.fall_instance = True
                 self.player.fall([self.spawn_point.x,self.spawn_point.y])
+                self.player.fall_instance = False
+                self.player.last_view = "idle_l"
                 self.player.life -= round(1/17,3)
                 print("Vous êtes tombés et il vous reste",self.player.life,"vie")
                 #vérifie si la collision entre le joueur et la sortie dans la grotte
