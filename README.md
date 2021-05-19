@@ -1,6 +1,6 @@
 Déplacement :
 * ATTENTION il est préférable de baisser le son du jeu lors du démarrage (musique d'ambiance un peu forte)
-* A pour monter  
+* Z pour monter  
 * S pour descendre  
 * D pour aller à droite  
 * Q pour aller à gauche  
