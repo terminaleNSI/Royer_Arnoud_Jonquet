@@ -1,9 +1,9 @@
 Déplacement :
 * ATTENTION il est préférable de baisser le son du jeu lors du démarrage (musique d'ambiance un peu forte)
-* fleche du haut pour monter  
-* fleche du bas pour descendre  
-* fleche de droite pour aller à droite  
-* fleche de gauche pour aller à gauche  
+* A pour monter  
+* S pour descendre  
+* D pour aller à droite  
+* Q pour aller à gauche  
 Pour lancer le programme, il est nécessaire d'installer 'pytmx' et 'pyscroll' :  
 pip install pytmx  
 pip install pyscroll  
