@@ -10,26 +10,22 @@ class SpriteSheet():
         self.sprite_sheet = pygame.image.load(name)
         self.images =dict()
 
-
-
-
     def load_images(self ,name,numbers = 1,row = 0):
         images = []
         for i in range(0,numbers):
             image = pygame.Surface([32,32])
             image.blit(self.sprite_sheet,(0,0),(i * 32,32*row,32,32))
             images.append(image)
-
         self.images.update({name : images})
-
 
     def get_images(self,name):
         return self.images[name]
 
 class Player(pygame.sprite.Sprite):
-
     def __init__(self,x,y):
         super().__init__()
+        tmx_data = pytmx.util_pygame.load_pygame("map jeu.tmx")
+        self.spawn_point = tmx_data.get_object_by_name("player_spawn")
         self.sprite_sheet= SpriteSheet("player.png")
         self.sprite_sheet.load_images("idle_r",numbers = 8)
         self.sprite_sheet.load_images("idle_l",numbers = 8,row = 1)
@@ -42,16 +38,18 @@ class Player(pygame.sprite.Sprite):
         self.sprite_sheet.load_images("fall_r",numbers = 8,row = 8)
         self.sprite_sheet.load_images("fall_l",numbers = 8,row = 9)
         self.image = self.sprite_sheet.get_images("idle_r")[0]
-        self.rect= self.image.get_rect()
-        self.position  = [x,y]
+        self.rect = self.image.get_rect()
+        self.position = [x,y]
         self.feet = pygame.Rect(0,0,self.rect.width,12)
         self.collision = pygame.Rect(0,0,self.rect.width,self.rect.height)
         self.current_animation = "idle_r"
         self.old_position = self.position
         self.current_animation_index = 0
         self.cooldown = -100
-        self.speed=3
-        self.life  = 3
+        self.cooldown_fall = 0
+        self.possible_fall = True
+        self.speed = 3
+        self.life = 3
         self.alive = True
         self.last_view = "r"
 
@@ -72,10 +70,26 @@ class Player(pygame.sprite.Sprite):
 
     def fall(self,spawn):
         self.position = spawn
+        self.change_animation("idle_" + self.last_view)
+        self.possible_fall = True
+        self.life -= 1
+        if self.life > 1:
+            print("Vous êtes tombés et il vous reste",self.life,"points de vie")
+        else:
+            print("Vous êtes tombés et il vous reste",self.life,"point de vie")
+    
+    def cool_fall(self):
+        if self.cooldown_fall > 0:
+            if self.possible_fall == True:
+                self.current_animation_index = 0
+                self.change_animation("fall_" + self.last_view)
+                self.possible_fall = False
+        if self.cooldown_fall >= 800:
+            self.cooldown_fall = 0
+            self.fall([self.spawn_point.x,self.spawn_point.y])
 
     def teleportation(self,spawn):
         self.position = spawn
-
 
     def change_animation(self,name):
         self.current_animation = name
@@ -94,6 +108,7 @@ class Player(pygame.sprite.Sprite):
         self.old_position = self.position.copy()
 
     def update(self):
+        self.cool_fall()
         self.rect.topleft = self.position
         self.feet.midbottom = self.rect.midbottom
         self.animation()
@@ -105,6 +120,7 @@ class Player(pygame.sprite.Sprite):
 class Pnj(pygame.sprite.Sprite):
     def __init__(self,x,y):
         super().__init__()
+        self.name="pnj_1"
         self.sprite_sheet = SpriteSheet("female.png")
         self.sprite_sheet.load_images("idle",numbers = 6, row = 0)
         self.current_animation = "idle"
@@ -112,13 +128,10 @@ class Pnj(pygame.sprite.Sprite):
         self.position = [x,y]
         self.current_animation_index = 0
         self.cooldown_anim = 0
-        self.cooldown_switch = 0
-        self.cooldown_move = 0
         self.rect= self.image.get_rect()
 
     def get_animation(self):
         return self.sprite_sheet.get_images(self.current_animation)
-
 
     def update(self):
         self.rect.topleft=self.position
@@ -138,6 +151,7 @@ class Pnj(pygame.sprite.Sprite):
 class Cobra(pygame.sprite.Sprite):
     def __init__(self,x,y):
         super().__init__()
+        self.name="cobra"
         self.sprite_sheet = SpriteSheet("Cobra.png")
         self.sprite_sheet.load_images("idle_r",numbers = 8, row = 0)
         self.sprite_sheet.load_images("idle_l",numbers = 8, row = 1)
@@ -187,10 +201,8 @@ class Cobra(pygame.sprite.Sprite):
             elif self.randmove == "up":
                 self.move_up()
             elif self.randmove == "down":
-                self.move_down()
-            
+                self.move_down()         
             self.cooldown_move = 0
-        
         
     def lightswitch(self):
         if self.cooldown_switch > self.randmove_time:
@@ -247,29 +259,23 @@ class Cobra(pygame.sprite.Sprite):
         self.current_animation = name
 
 
-
 class Game:
     def __init__(self):
         self.screen=pygame.display.set_mode((1080,720))
         pygame.display.set_caption("Hero Quest")
-
-
         # chargement de la carte
         tmx_data = pytmx.util_pygame.load_pygame("map jeu.tmx")
         map_data = pyscroll.data.TiledMapData(tmx_data)
         map_layer=pyscroll.orthographic.BufferedRenderer(map_data, self.screen.get_size())
         # chargement du groupe avec la map
         self.group = pyscroll.PyscrollGroup(map_layer=map_layer , default_layer = 1)
-
         #récupération de la position du spawn du joueur
         self.spawn_point = tmx_data.get_object_by_name("player_spawn")
         self.spawn_point_bis = tmx_data.get_object_by_name("spawn_2")
         self.sortie = tmx_data.get_object_by_name("player_spawn2")
-
         #chargement du joueur
         self.player=Player(self.spawn_point.x,self.spawn_point.y)
         self.group.add(self.player)
-
         #Zoom de la map
         map_layer.zoom = 2.5
         #chargement de toutes les collisions
@@ -305,66 +311,57 @@ class Game:
     def handle_input(self):
         pressed = pygame.key.get_pressed()
         if self.player.alive == True:
-            if pressed[pygame.K_w]:
-                self.player.move_up()
-                self.player.change_animation("run_"+self.player.last_view)
-            elif pressed[pygame.K_s]:
-                self.player.move_down()
-                self.player.change_animation("run_"+self.player.last_view)
-            elif pressed[pygame.K_d]:
-                self.player.move_right()
-                self.player.change_animation("run_"+self.player.last_view)
-                self.player.last_view = "r"
-            elif pressed[pygame.K_a]:
-                self.player.move_left()
-                self.player.change_animation("run_"+self.player.last_view)
-                self.player.last_view = "l"
-            elif pressed[pygame.K_0]:
-                self.player.change_animation("attack_"+self.player.last_view)
-                self.player.last_view = "r"
-            elif pressed[pygame.K_1]:
-                self.player.change_animation("attack_"+self.player.last_view)
-                self.player.last_view = "l"
-            elif pressed[pygame.K_f]:
-                self.player.change_animation("fall_"+self.player.last_view)
-                self.player.last_view = "l"
-            elif pressed[pygame.K_g]:
-                self.player.change_animation("fall_"+self.player.last_view)
-                self.player.last_view = "r"
-            elif pressed[pygame.K_l]:
-                self.cobra.move_back()
-            else:
-                self.player.change_animation("idle_"+self.player.last_view)
-
+            if self.player.current_animation != "fall_l" and self.player.current_animation != "fall_r":
+                if pressed[pygame.K_w]:
+                    self.player.move_up()
+                    self.player.change_animation("run_"+self.player.last_view)
+                elif pressed[pygame.K_s]:
+                    self.player.move_down()
+                    self.player.change_animation("run_"+self.player.last_view)
+                elif pressed[pygame.K_d]:
+                    self.player.move_right()
+                    self.player.change_animation("run_"+self.player.last_view)
+                    self.player.last_view = "r"
+                elif pressed[pygame.K_a]:
+                    self.player.move_left()
+                    self.player.change_animation("run_"+self.player.last_view)
+                    self.player.last_view = "l"
+                elif pressed[pygame.K_0]:
+                    self.player.change_animation("attack_"+self.player.last_view)
+                    self.player.last_view = "r"
+                elif pressed[pygame.K_1]:
+                    self.player.change_animation("attack_"+self.player.last_view)
+                    self.player.last_view = "l"
+                elif pressed[pygame.K_f]:
+                    self.player.change_animation("fall_"+self.player.last_view)
+                    self.player.last_view = "l"
+                elif pressed[pygame.K_g]:
+                    self.player.change_animation("fall_"+self.player.last_view)
+                    self.player.last_view = "r"
+                elif pressed[pygame.K_l]:
+                    self.cobra.move_back()
+                else:
+                    self.player.change_animation("idle_"+self.player.last_view)
 
     def update(self):
         self.group.update()
-
         # vérifie la collision avec un mur
-        for sprite in self.group.sprites():
-            if self.player.feet.collidelist(self.walls) >-1:
-                # le joueur revient juste en arrière
-                self.player.move_back()
-                self.player.change_animation("hit")
-                #vérifie la collision avec un trou
-            if self.player.feet.collidelist(self.void) >-1:
-                # renvoie le joueur au point de spawn
-                self.player.fall([self.spawn_point.x,self.spawn_point.y])
-                self.player.life -= round(1/17,3)
-                print("Vous êtes tombés et il vous reste",self.player.life,"vie")
-                #vérifie si la collision entre le joueur et la sortie dans la grotte
-            if self.player.feet.collidelist(self.exit) >-1:
-                self.player.teleportation([self.spawn_point_bis.x,self.spawn_point_bis.y])
-                print("en cours de développement")
-                #vérifie la collision entre le joueur et la sortie dans la forêt
-            if self.player.feet.collidelist(self.exit2) >-1:
-                self.player.teleportation([self.sortie.x,self.sortie.y])
-                print("en cours de développement")
-
-
-
-
-
+        if self.player.feet.collidelist(self.walls) >-1:
+            # le joueur revient juste en arrière
+            self.player.move_back()
+            self.player.change_animation("hit")
+            #vérifie la collision avec un trou
+        if self.player.feet.collidelist(self.void) >-1:
+            if self.player.cooldown_fall == 0:
+                self.player.cooldown_fall = 1
+            #vérifie si la collision entre le joueur et la sortie dans la grotte
+        if self.player.feet.collidelist(self.exit) >-1:
+            self.player.teleportation([self.spawn_point_bis.x,self.spawn_point_bis.y])
+            print("en cours de développement")
+            #vérifie la collision entre le joueur et la sortie dans la forêt
+        if self.player.feet.collidelist(self.exit2) >-1:
+            self.player.teleportation([self.sortie.x,self.sortie.y])
+            print("en cours de développement")
 
     def run(self):
         running = True
@@ -379,25 +376,23 @@ class Game:
             self.update()
             self.group.center(self.player.rect)
             self.group.draw(self.screen)
-
             self.player.cooldown += clock.get_time()
+            if self.player.cooldown_fall > 0:
+                self.player.cooldown_fall += clock.get_time()
             for monster in self.monster:
                 monster.cooldown_anim += clock.get_time()
-                monster.cooldown_switch += clock.get_time()
-                monster.cooldown_move += clock.get_time()
+                if monster.name=="cobra":
+                    monster.cooldown_switch += clock.get_time()
+                    monster.cooldown_move += clock.get_time()
             if self.player.life <= 0 :
                 self.player.change_animation("death")
                 self.player.alive = False
             #actualisation de l'écran
             pygame.display.flip()
             song.play()
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-
-
-
             clock.tick(60)
         pygame.quit()
 
