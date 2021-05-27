@@ -33,10 +33,12 @@ class Player(pygame.sprite.Sprite):
         self.sprite_sheet.load_images("run_l",numbers = 8,row = 3)
         self.sprite_sheet.load_images("attack_r",numbers = 8,row = 4)
         self.sprite_sheet.load_images("attack_l",numbers = 8,row = 5)
-        self.sprite_sheet.load_images("hit",numbers = 8,row = 6)
-        self.sprite_sheet.load_images("death",numbers = 8,row = 7)
-        self.sprite_sheet.load_images("fall_r",numbers = 8,row = 8)
-        self.sprite_sheet.load_images("fall_l",numbers = 8,row = 9)
+        self.sprite_sheet.load_images("hit_r",numbers = 8,row = 6)
+        self.sprite_sheet.load_images("hit_l",numbers = 8,row = 7)
+        self.sprite_sheet.load_images("death_r",numbers = 8,row = 8)
+        self.sprite_sheet.load_images("death_l",numbers = 8,row = 9)
+        self.sprite_sheet.load_images("fall_r",numbers = 8,row = 10)
+        self.sprite_sheet.load_images("fall_l",numbers = 8,row = 11)
         self.image = self.sprite_sheet.get_images("idle_r")[0]
         self.rect = self.image.get_rect()
         self.position = [x,y]
@@ -51,7 +53,9 @@ class Player(pygame.sprite.Sprite):
         self.speed = 3
         self.life = 3
         self.alive = True
+        self.movable = True
         self.last_view = "r"
+        self.play = True
 
     def move_right(self):
         self.position[0] += self.speed
@@ -67,11 +71,18 @@ class Player(pygame.sprite.Sprite):
 
     def move_back(self):
         self.position = self.old_position
+    
+    def death(self):
+        self.movable = False
+        self.current_animation_index = 0
+        self.change_animation("death_" + self.last_view)
+        self.alive = False
 
     def fall(self,spawn):
         self.position = spawn
         self.change_animation("idle_" + self.last_view)
         self.possible_fall = True
+        self.movable = True
         self.life -= 1
         if self.life > 1:
             print("Vous êtes tombés et il vous reste",self.life,"points de vie")
@@ -84,6 +95,7 @@ class Player(pygame.sprite.Sprite):
                 self.current_animation_index = 0
                 self.change_animation("fall_" + self.last_view)
                 self.possible_fall = False
+                self.movable = False
         if self.cooldown_fall >= 800:
             self.cooldown_fall = 0
             self.fall([self.spawn_point.x,self.spawn_point.y])
@@ -108,14 +120,18 @@ class Player(pygame.sprite.Sprite):
         self.old_position = self.position.copy()
 
     def update(self):
-        self.cool_fall()
-        self.rect.topleft = self.position
-        self.feet.midbottom = self.rect.midbottom
-        self.animation()
-        self.image = self.get_animation()[self.current_animation_index%8]
-        self.image.set_colorkey((0,0,0))
-        self.image = pygame.transform.scale(self.image,(50,50))
-        self.start = time.time()
+        if self.alive == False:
+            if self.current_animation_index == 7:
+                self.play = False
+        if self.play == True:
+            self.cool_fall()
+            self.rect.topleft = self.position
+            self.feet.midbottom = self.rect.midbottom
+            self.animation()
+            self.image = self.get_animation()[self.current_animation_index%8]
+            self.image.set_colorkey((0,0,0))
+            self.image = pygame.transform.scale(self.image,(50,50))
+            self.start = time.time()
 
 class Pnj(pygame.sprite.Sprite):
     def __init__(self,x,y):
@@ -310,8 +326,7 @@ class Game:
 
     def handle_input(self):
         pressed = pygame.key.get_pressed()
-        if self.player.alive == True:
-            if self.player.current_animation != "fall_l" and self.player.current_animation != "fall_r":
+        if self.player.movable == True:
                 if pressed[pygame.K_w]:
                     self.player.move_up()
                     self.player.change_animation("run_"+self.player.last_view)
@@ -332,14 +347,6 @@ class Game:
                 elif pressed[pygame.K_1]:
                     self.player.change_animation("attack_"+self.player.last_view)
                     self.player.last_view = "l"
-                elif pressed[pygame.K_f]:
-                    self.player.change_animation("fall_"+self.player.last_view)
-                    self.player.last_view = "l"
-                elif pressed[pygame.K_g]:
-                    self.player.change_animation("fall_"+self.player.last_view)
-                    self.player.last_view = "r"
-                elif pressed[pygame.K_l]:
-                    self.cobra.move_back()
                 else:
                     self.player.change_animation("idle_"+self.player.last_view)
 
@@ -385,8 +392,8 @@ class Game:
                     monster.cooldown_switch += clock.get_time()
                     monster.cooldown_move += clock.get_time()
             if self.player.life <= 0 :
-                self.player.change_animation("death")
-                self.player.alive = False
+                if self.player.alive == True:
+                    self.player.death()
             #actualisation de l'écran
             pygame.display.flip()
             song.play()
